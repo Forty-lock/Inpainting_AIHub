@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 import random
 import glob
+import torch
 
 class CustomDataset(Dataset):
     def __init__(self, img_root, train=True):
@@ -22,6 +23,8 @@ class CustomDataset(Dataset):
         path_image = self.image_list[idx]
         path_gt = path_image.replace('img', 'gt')
         path_mask = path_image.replace('img', 'mask')
+
+        name_image = path_image.split('/')[-1]
 
         Loadimage = cv2.imread(path_image)[:, :, ::-1]
         Loadgt = cv2.imread(path_gt)[:, :, ::-1]
@@ -50,11 +53,30 @@ class CustomDataset(Dataset):
             Loadgt = Loadgt[rh:rh + h, rw:rw + w, :]
             Loadmask = Loadmask[rh:rh + h, rw:rw + w]
 
-        img = self.img_transform(Loadimage.copy())
-        gt = self.img_transform(Loadgt.copy())
-        msk = self.msk_transform(Loadmask.copy()).float()
+            img = self.img_transform(Loadimage.copy())
+            gt = self.img_transform(Loadgt.copy())
+            msk = self.msk_transform(Loadmask.copy()).float()
 
-        return img, gt, msk
+            return img, gt, msk
+        else:
+
+            img = self.img_transform(Loadimage.copy())
+            gt = self.img_transform(Loadgt.copy())
+            msk = self.msk_transform(Loadmask.copy()).float()
+
+            return img, gt, msk, name_image
 
     def __len__(self):
         return len(self.image_list)
+
+def collate(batch):
+    paths = []
+    imgs = []
+    gts = []
+    msks = []
+    for sample in batch:
+        imgs.append(sample[0])
+        gts.append(sample[1])
+        msks.append(sample[2])
+        paths.append(sample[3])
+    return torch.stack(imgs, 0), torch.stack(gts, 0), torch.stack(msks, 0), paths

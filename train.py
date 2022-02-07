@@ -1,7 +1,7 @@
 import os
 import torch
 from torch.utils.data import DataLoader
-from preprocessing import CustomDataset
+from preprocessing import CustomDataset, collate
 import torch.optim as optim
 from tqdm import tqdm
 import net as mm
@@ -31,7 +31,7 @@ def main():
     custom_test = CustomDataset(dPath_test, train=False)
 
     train_loader = DataLoader(custom_train, batch_size=batch_size, shuffle=True, drop_last=True)
-    test_loader = DataLoader(custom_test, batch_size=1, shuffle=True)
+    test_loader = DataLoader(custom_test, batch_size=1, shuffle=True, collate_fn=collate)
 
     # --------- Module
 
@@ -101,7 +101,7 @@ def main():
             if iter_count % saving_iter == 0:
 
                 print('SAVING MODEL...')
-                utils.save_model(gen, dis, optimizer_G, optimizer_D, model_path, iter_count)
+                utils.save_model(gen, dis, optimizer_G, optimizer_D, model_path)
                 torch.cuda.empty_cache()
                 print('SAVING MODEL Finish')
 

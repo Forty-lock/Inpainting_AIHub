@@ -22,7 +22,7 @@ def eval(test_loader, model, save_path):
     temp2 = []
     temp3 = []
     with torch.no_grad():
-        for i, (img, gt, msk) in enumerate(test_loader):
+        for i, (img, gt, msk, _) in enumerate(test_loader):
 
             Height_test, Width_test = img.shape[2:]
             if Height_test % 8 != 0 or Width_test % 8 != 0:
@@ -34,8 +34,7 @@ def eval(test_loader, model, save_path):
 
             prediction = model(img.cuda()*msk.cuda(), msk.cuda()).cpu()
 
-            if i < 30:
-                save_img(img, gt, msk, prediction, save_path, i)
+            save_img(img, gt, msk, prediction, save_path, i)
 
             gt = (gt + 1) * 255 / 2
             prediction = (prediction + 1) * 255 / 2
@@ -53,18 +52,17 @@ def eval(test_loader, model, save_path):
     model.train()
     return np.mean(temp1), np.mean(temp2), np.mean(temp3)
 
-def save_model(G, D, optimizer_g, optimizer_d, model_path, iter_count):
+def save_model(G, D, optimizer_g, optimizer_d, model_path):
 
-    Temp = model_path + '/cVG iter %s/' % iter_count
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
 
-    if not os.path.exists(Temp):
-        os.makedirs(Temp)
+    Checkpoint = model_path + '/PEPSI.pth'
 
-    SaveName = Temp + 'Train_%s.pth' % iter_count
     torch.save({
         'G': G.state_dict(),
         'D': D.state_dict(),
         'opt_G': optimizer_g.state_dict(),
         'opt_D': optimizer_d.state_dict(),
-    }, SaveName)
+    }, Checkpoint)
     torch.cuda.empty_cache()

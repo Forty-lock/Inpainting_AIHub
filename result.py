@@ -1,11 +1,10 @@
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from preprocessing import CustomDataset
+from preprocessing import CustomDataset, collate
 import utils
 import net as mm
 import csv
-import time
 
 save_path = './results'
 Checkpoint = './model/PEPSI.pth'
@@ -13,13 +12,13 @@ Checkpoint = './model/PEPSI.pth'
 def main():
     with open(save_path + '/eval.csv', 'w', newline='') as data_file:
         wr = csv.writer(data_file)
-        wr.writerow(['ID', 'Time', 'Size', 'PSNR'])
+        wr.writerow(['ID', 'Size', 'PSNR'])
 
     # --------- Data
     print('Data Load')
     dPath_data = './test/'
     custom_data = CustomDataset(dPath_data, train=False)
-    data_loader = DataLoader(custom_data, batch_size=1)
+    data_loader = DataLoader(custom_data, batch_size=1, collate_fn=collate)
 
     # --------- Model
     print('Model build')
@@ -32,7 +31,7 @@ def main():
 
     # --------- Test
     network.eval()
-    for isave, (img, gt, msk) in enumerate(tqdm(data_loader)):
+    for isave, (img, gt, msk, name) in enumerate(tqdm(data_loader)):
         _, c_test, Height_test, Width_test = img.shape
         if Height_test % 8 != 0 or Width_test % 8 != 0:
             ht = Height_test // 8 * 8
@@ -51,8 +50,7 @@ def main():
         mse = torch.mean((prediction - gt) ** 2)
         psnr = 20 * torch.log10(255.0 / torch.sqrt(mse + 1e-10)).item()
 
-        stat = ['img_%04d.png' % isave]
-        stat.append(time.ctime())
+        stat = name
         hole = (1 - msk.numpy()).mean() * 100
         stat.append(hole)
         stat.append(psnr)
